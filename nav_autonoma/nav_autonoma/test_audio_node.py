@@ -1,70 +1,75 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
-import subprocess
-import os
+from std_msgs.msg import String
 
-class SimpleAudioNode(Node):
+from library_opi.audio_player import AudioPlayer
+
+class TestAudioNode(Node):
     def __init__(self):
         super().__init__('test_audio_node')
         
-        # Parámetro para el archivo de audio
-        self.declare_parameter('audio_file', '/home/orangepi/sound_ia/test_eleven.mp3')
-        self.audio_file = self.get_parameter('audio_file').value
+        # Parámetros
+        self.declare_parameter('audio_file', '/home/orangepi/sound_ia/resource/desalojo.mp3')
+        self.declare_parameter('audio_device', 'plughw:3,0')
+        self.declare_parameter('loop', False)
+        self.declare_parameter('volume', 80)
         
-        # Verificar que el archivo existe
-        if not os.path.exists(self.audio_file):
-            self.get_logger().error(f'❌ Archivo de audio no encontrado: {self.audio_file}')
-            return
+        audio_file = self.get_parameter('audio_file').value
+        audio_device = self.get_parameter('audio_device').value
+        loop = self.get_parameter('loop').value
+        volume = self.get_parameter('volume').value
         
-        self.get_logger().info(f'🎵 Iniciando reproducción de: {self.audio_file}')
+        # Inicializar reproductor
+        self.audio = AudioPlayer(audio_device=audio_device, node=self)
         
-        # Reproducir el audio
-        self.play_audio()
+        # Ajustar volumen
+        if volume != 80:
+            self.audio.set_volume(volume)
         
-        self.get_logger().info('✅ Nodo de audio inicializado. Presiona Ctrl+C para detener.')
+        # Publisher de estado
+        self.status_pub = self.create_publisher(String, 'audio/status', 10)
+        
+        # Timer para verificar estado
+        self.status_timer = self.create_timer(2.0, self.publish_status)
+        
+        # Reproducir audio
+        self.get_logger().info(f'🎵 Iniciando reproducción de: {audio_file}')
+        
+        success = self.audio.play(audio_file, blocking=False, loop=loop)
+        
+        if success:
+            mode = "loop continuo" if loop else "una vez"
+            self.get_logger().info(f'✅ Reproducción iniciada ({mode})')
+        else:
+            self.get_logger().error('❌ Error al iniciar reproducción')
+        
+        self.get_logger().info('💡 Presiona Ctrl+C para detener')
 
-    def play_audio(self):
-        """Reproduce el audio continuamente"""
-        while True:
-            try:
-                # Comando que sabemos funciona
-                cmd = f"mpg321 -o alsa -a plughw:3,0 '{self.audio_file}'"
-                
-                # Ejecutar el proceso de audio
-                self.audio_process = subprocess.Popen(
-                    cmd, 
-                    shell=True,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE
-                )
-                
-                self.get_logger().info('🔊 Audio reproducido exitosamente')
-                
-            except Exception as e:
-                self.get_logger().error(f'❌ Error reproduciendo audio: {str(e)}')
+    def publish_status(self):
+        """Publica el estado de reproducción"""
+        status_msg = String()
+        status = "🔊 Reproduciendo" if self.audio.is_playing_audio() else "🔇 Detenido"
+        status_msg.data = status
+        self.status_pub.publish(status_msg)
 
     def destroy_node(self):
-        """Limpia recursos al destruir el nodo"""
+        """Cleanup"""
         self.get_logger().info('🛑 Deteniendo reproducción...')
-        
-        if hasattr(self, 'audio_process') and self.audio_process:
-            self.audio_process.terminate()
-            self.audio_process.wait()
-        
+        self.audio.cleanup()
         super().destroy_node()
 
 def main(args=None):
     rclpy.init(args=args)
     
-    node = SimpleAudioNode()
-    
     try:
+        node = TestAudioNode()
         rclpy.spin(node)
     except KeyboardInterrupt:
-        node.get_logger().info('👋 Interrupción por teclado recibida')
+        pass
     finally:
-        node.destroy_node()
+        if 'node' in locals():
+            node.destroy_node()
         rclpy.shutdown()
 
 if __name__ == '__main__':

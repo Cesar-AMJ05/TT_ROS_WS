@@ -18,7 +18,7 @@ class OdometryNode(Node):
         # Parámetros (los ajustaremos después con tus valores exactos)
         self.declare_parameter('wheel_radius', 0.05)  # 5cm
         self.declare_parameter('wheel_base_x', 0.3)   # 30cm entre ruedas frontales/traseras
-        self.declare_parameter('wheel_base_y', 0.4)   # 40cm entre ruedas izquierda/derecha
+        self.declare_parameter('wheel_base_y', 0.28)   # 40cm entre ruedas izquierda/derecha
         self.declare_parameter('encoder_ppr', 1000)
         
         # Inicializar hardware

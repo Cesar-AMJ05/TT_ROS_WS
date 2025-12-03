@@ -16,6 +16,11 @@ setup(
         # Incluir archivos de lanzamiento
         (os.path.join('share', package_name, 'launch'), 
          glob('launch/*.launch.py')),
+        (os.path.join('share', package_name, 'config'),
+        glob('config/*.lua')),
+        # Configuraciones de RViz
+        (os.path.join('share', package_name, 'rviz'),
+        glob('rviz/*.rviz')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -43,6 +48,16 @@ setup(
             'test_pwm_node = nav_autonoma.test_pwm_node:main',
             'test_move_node = nav_autonoma.test_move_node:main',
             'test_audio_node = nav_autonoma.test_audio_node:main',
+            'test_camera_node = nav_autonoma.test_camera_node:main',
+            'test_camera_display_node = nav_autonoma.test_camera_display:main',
+            'test_taulidar_node = nav_autonoma.test_taulidar_node:main',
+            'test_taulidar_display_node = nav_autonoma.test_taulidar_display_node:main',
+            'test_ads1115_node = nav_autonoma.test_ads1115_node:main',
+            'test_yolo_detection_node = nav_autonoma.test_yolo_detection_node:main',
+            'test_yolo_display_node = nav_autonoma.test_yolo_display_node:main',
+            'yolo_audio_node = nav_autonoma.yolo_audio_node:main',
+            'taulidar_pointcloud_node = nav_autonoma.taulidar_pointcloud_node:main',
+            'pointcloud_to_laserscan_node = nav_autonoma.pointcloud_to_laserscan_node:main',
         ],
     },
 )
